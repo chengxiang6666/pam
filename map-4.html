@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>中国省级地图</title>
+  <style>
+    #map {
+      width: 800px;
+      height: 600px;
+      background-color: #f5f5f5;
+      position: relative;
+    }
+
+    .province {
+      fill: #9dc7d8;
+      stroke: #fff;
+      stroke-width: 1px;
+    }
+
+    .province:hover {
+      fill: #7fb8cd;
+    }
+
+    .province-label {
+      font-size: 12px;
+      fill: #333;
+      pointer-events: none;
+    }
+
+    .info-box {
+      position: absolute;
+      padding: 10px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://d3js.org/d3-geo.v2.min.js"></script>
+  <script>
+    // 加载地图数据
+    d3.json("China.json").then(function(china) {
+      var width = 800;
+      var height = 600;
+
+      var projection = d3.geoMercator()
+        .fitSize([width, height], china);
+
+      var path = d3.geoPath()
+        .projection(projection);
+
+      var svg = d3.select("#map")
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+      // 绘制省份
+      var provinces = svg.selectAll("path")
+        .data(china.features)
+        .enter().append("path")
+        .attr("class", "province")
+        .attr("d", path)
+        .on("mouseover", handleMouseOver)
+        .on("mouseout", handleMouseOut)
+        .on("click", handleClick);
+
+      // 绘制省份标签
+      svg.selectAll("text")
+        .data(china.features)
+        .enter().append("text")
+        .attr("class", "province-label")
+        .attr("transform", function(d) { return "translate(" + path.centroid(d) + ")"; })
+        .text(function(d) { return d.properties.name; });
+
+      // 鼠标悬停事件处理函数
+      function handleMouseOver(d) {
+        d3.select(this).style("fill", "#7fb8cd");
+      }
+
+      // 鼠标移出事件处理函数
+      function handleMouseOut(d) {
+        d3.select(this).style("fill", "#9dc7d8");
+      }
+
+      // 点击事件处理函数
+      function handleClick(d) {
+        var infoBox = svg.append("foreignObject")
+          .attr("class", "info-box")
+          .attr("x", event.pageX + 10)
+          .attr("y", event.pageY + 10)
+          .attr("width", 200)
+          .attr("height", 100);
+
+        infoBox.append("xhtml:div")
+          .style("width", "100%")
+          .style("height", "100%")
+          .style("display", "flex")
+          .style("align-items", "center")
+          .style("justify-content", "center")
+          .style("font-size", "14px")
+          .style("color", "#333")
+          .text(d.properties.name + " Province");
+
+        // 点击文档其他地方时，隐藏文本框
+        d3.select(document).on("click", function() {
+          infoBox.remove();
+          d3.select(document).on("click", null);
+        });
+
+        // 阻止事件冒泡
+        d3.event.stopPropagation();
+      }
+    });
+  </script>
+</body>
+</html>
